@@ -1,6 +1,7 @@
 import { defineTool, errorTextResult, type ToolDefinition, textResult } from "@playmcp/mcp-common"
 import * as z from "zod/v4"
 
+import { fetchDrivingRoute } from "./adapters/kakao-directions.js"
 import { loadMoimSources } from "./adapters/moim-sources.js"
 import type { AvailabilityBoardStore } from "./availability-board-store.js"
 import {
@@ -39,6 +40,7 @@ export function createMoimTools(input: {
   readonly boardStore: AvailabilityBoardStore
   readonly meetStore: MeetPlanStore
   readonly publicBaseUrl: string
+  readonly routeApiKey?: string | undefined
 }): readonly ToolDefinition[] {
   return [
     defineTool({
@@ -132,7 +134,11 @@ export function createMoimTools(input: {
           return errorTextResult(formatMidpointError("출발지를 2곳 이상 알려주세요."))
         }
         const stored = input.meetStore.save({
-          origins: sources.resolvedOrigins.map(toMeetOrigin),
+          origins: await withRoutes(
+            sources.resolvedOrigins.map(toMeetOrigin),
+            result.value.midpoint,
+            input.routeApiKey,
+          ),
           midpoint: result.value.midpoint,
           fairness: result.value.fairnessRows,
           places: [],
@@ -203,7 +209,11 @@ export function createMoimTools(input: {
           ? sources.places
           : recommendMidpointPlaces({ midpoint: resolvedMidpoint, categories, limit, places: [] })
         const stored = input.meetStore.save({
-          origins: sources.resolvedOrigins.map(toMeetOrigin),
+          origins: await withRoutes(
+            sources.resolvedOrigins.map(toMeetOrigin),
+            resolvedMidpoint,
+            input.routeApiKey,
+          ),
           midpoint: resolvedMidpoint,
           fairness: sources.resolvedOrigins.map((origin) => ({
             originLabel: origin.label,
@@ -334,4 +344,26 @@ function toMeetPlace(place: RecommendedPlace): MeetPlanPlace {
 
 function sourceNote(sources: readonly { readonly note: string }[]): string {
   return sources.map((source) => source.note).join("; ")
+}
+
+// Attach a road-following driving route (Kakao Mobility) from each origin to the midpoint,
+// when a REST key is available. Best-effort per origin — failures keep the origin route-less.
+async function withRoutes(
+  origins: readonly MeetPlanOrigin[],
+  midpoint: { readonly x: number; readonly y: number },
+  apiKey: string | undefined,
+): Promise<readonly MeetPlanOrigin[]> {
+  if (apiKey === undefined || apiKey.trim().length < 12) return origins
+  const key = apiKey.trim()
+  return Promise.all(
+    origins.map(async (origin) => {
+      const route = await fetchDrivingRoute({
+        origin: { x: origin.x, y: origin.y },
+        destination: midpoint,
+        apiKey: key,
+        timeoutMs: 4500,
+      })
+      return route === undefined ? origin : { ...origin, route }
+    }),
+  )
 }

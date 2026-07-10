@@ -57,6 +57,17 @@ describe("lenient tool inputs (as LLMs actually call them)", () => {
     expect(text).not.toContain("계산할 수 없습니다")
   })
 
+  it("find_midpoint accepts flat {lat, lng} origins with no coordinates wrapper", async () => {
+    const text = await callToolText(service.fetch, "find_midpoint", {
+      origins: [
+        { label: "나", lat: 37.5, lng: 127.0 },
+        { lat: 37.55, lng: 127.05 },
+      ],
+    })
+    expect(text).toContain("/meet/")
+    expect(text).not.toContain("계산할 수 없습니다")
+  })
+
   it("recommend_midpoint_places accepts a midpoint given as {lat, lng}", async () => {
     const text = await callToolText(service.fetch, "recommend_midpoint_places", {
       midpoint: { lat: 37.54, lng: 126.98 },

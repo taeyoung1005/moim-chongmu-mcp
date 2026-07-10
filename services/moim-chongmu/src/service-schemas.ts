@@ -42,12 +42,37 @@ export const clockSchema = z.string().refine(isClock, {
 })
 
 export const mcpOriginSchema = z.object({
-  label: z.string().trim().min(1).max(80),
+  label: z.string().trim().min(1).max(80).optional(),
   address: z.string().trim().min(1).max(160).optional(),
   coordinates: lenientCoordinatesSchema.optional(),
+  // Flat coordinate aliases: LLMs often send {label, lat, lng} with no `coordinates` wrapper.
+  x: z.number().finite().optional(),
+  y: z.number().finite().optional(),
+  lat: z.number().finite().optional(),
+  latitude: z.number().finite().optional(),
+  lng: z.number().finite().optional(),
+  lon: z.number().finite().optional(),
+  longitude: z.number().finite().optional(),
 })
 
-// Accept a bare place-name/address string (what LLMs usually send) as well as a full object.
+const objectOriginSchema = mcpOriginSchema.transform((origin, ctx) => {
+  const flatX = origin.x ?? origin.lng ?? origin.lon ?? origin.longitude
+  const flatY = origin.y ?? origin.lat ?? origin.latitude
+  const coordinates =
+    origin.coordinates ??
+    (flatX !== undefined && flatY !== undefined ? { x: flatX, y: flatY } : undefined)
+  if (origin.address === undefined && coordinates === undefined) {
+    ctx.addIssue({ code: "custom", message: "출발지는 주소 또는 좌표가 필요합니다." })
+    return z.NEVER
+  }
+  return {
+    label: origin.label ?? origin.address ?? "출발지",
+    ...(origin.address === undefined ? {} : { address: origin.address }),
+    ...(coordinates === undefined ? {} : { coordinates }),
+  }
+})
+
+// Accept a bare place-name/address string (what LLMs usually send) as well as an object.
 const stringOriginSchema = z
   .string()
   .trim()
@@ -55,15 +80,7 @@ const stringOriginSchema = z
   .max(160)
   .transform((value) => ({ label: value, address: value }))
 
-export const originSchema = z
-  .union([stringOriginSchema, mcpOriginSchema])
-  .refine(
-    (origin) =>
-      origin.address !== undefined || ("coordinates" in origin && origin.coordinates !== undefined),
-    {
-      message: "출발지는 주소 또는 좌표가 필요합니다.",
-    },
-  )
+export const originSchema = z.union([stringOriginSchema, objectOriginSchema])
 
 export type OriginInput = z.infer<typeof originSchema>
 

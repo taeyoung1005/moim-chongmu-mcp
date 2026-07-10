@@ -14,13 +14,24 @@ export function meetInteractionScript(): string {
   if(!el||!data||!window.kakao||!kakao.maps||!kakao.maps.load)return;
   kakao.maps.load(function(){
     var LL=kakao.maps.LatLng;
+    var COLORS=["#2563eb","#dc2626","#7c3aed","#d97706","#0891b2","#db2777","#4f46e5","#65a30d"];
     var mid=new LL(data.midpoint.y,data.midpoint.x);
     var map=new kakao.maps.Map(el,{center:mid,level:6});
     var bounds=new kakao.maps.LatLngBounds();
     function pin(pos,html,z){new kakao.maps.CustomOverlay({map:map,position:pos,content:html,yAnchor:1,zIndex:z});bounds.extend(pos)}
-    pin(mid,'<div class="pin pin-mid">중간</div>',5);
-    (data.origins||[]).forEach(function(o,i){if(!isFinite(o.x)||!isFinite(o.y))return;pin(new LL(o.y,o.x),'<div class="pin pin-origin">'+(i+1)+'</div>',4)});
+    // Colour-coded line from each origin to the midpoint, one colour per origin. When a
+    // road-following route is present ([lng,lat] pairs), draw along the roads; else a straight line.
+    (data.origins||[]).forEach(function(o,i){
+      if(!isFinite(o.x)||!isFinite(o.y))return;
+      var c=COLORS[i%COLORS.length];var pos=new LL(o.y,o.x);var path;
+      if(o.route&&o.route.length>1){
+        path=o.route.map(function(pt){var p=new LL(pt[1],pt[0]);bounds.extend(p);return p});
+      }else{path=[pos,mid]}
+      new kakao.maps.Polyline({map:map,path:path,strokeWeight:5,strokeColor:c,strokeOpacity:0.9,strokeStyle:"solid"});
+      pin(pos,'<div class="pin pin-origin" style="--pin-color:'+c+'">'+(i+1)+'</div>',4);
+    });
     (data.places||[]).forEach(function(p){if(!isFinite(p.x)||!isFinite(p.y))return;pin(new LL(p.y,p.x),'<div class="pin pin-place"></div>',3)});
+    pin(mid,'<div class="pin pin-mid">중간</div>',6);
     if(!bounds.isEmpty())map.setBounds(bounds,48,48,48,48);
   });
 })();</script>`

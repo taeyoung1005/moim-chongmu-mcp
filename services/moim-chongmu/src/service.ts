@@ -14,6 +14,7 @@ export type MoimChongmuServiceOptions = {
   readonly meetStore?: MeetPlanStore | undefined
   readonly publicBaseUrl?: string | undefined
   readonly kakaoMapJsKey?: string | undefined
+  readonly routeApiKey?: string | undefined
 }
 
 export function createMoimChongmuService(options: MoimChongmuServiceOptions = {}): ServiceApp {
@@ -21,12 +22,13 @@ export function createMoimChongmuService(options: MoimChongmuServiceOptions = {}
   const meetStore = options.meetStore ?? createMeetPlanStore()
   const publicBaseUrl = options.publicBaseUrl ?? defaultPublicBaseUrl()
   const kakaoMapJsKey = options.kakaoMapJsKey ?? process.env["KAKAO_MAP_JS_KEY"]
+  const routeApiKey = options.routeApiKey ?? process.env["KAKAO_REST_API_KEY"]
   const service = createServiceApp({
     id: "moim-chongmu",
     name: "모임좌표",
     version: "0.1.0",
     description: "가능 시간, 중간지점, 채팅 공유문을 stateless로 정리하는 MCP",
-    tools: createMoimTools({ boardStore, meetStore, publicBaseUrl }),
+    tools: createMoimTools({ boardStore, meetStore, publicBaseUrl, routeApiKey }),
   })
   return {
     config: service.config,

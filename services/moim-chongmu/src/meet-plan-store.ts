@@ -1,10 +1,18 @@
 import { randomUUID } from "node:crypto"
 
+export type MeetRoute = {
+  // Road-following polyline as [lng, lat] pairs, plus real driving distance/time.
+  readonly path: readonly (readonly [number, number])[]
+  readonly distanceMeters: number
+  readonly durationSeconds: number
+}
+
 export type MeetPlanOrigin = {
   readonly label: string
   readonly address?: string | undefined
   readonly x: number
   readonly y: number
+  readonly route?: MeetRoute | undefined
 }
 
 export type MeetPlanFairness = {
