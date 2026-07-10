@@ -39,6 +39,8 @@ describe("모임좌표 web availability board", () => {
     expect(initialHtml).toContain("참여자 이름")
     expect(initialHtml).not.toContain("<select")
     expect(initialHtml).not.toContain("<datalist")
+    expect(initialHtml).toContain("pointerdown")
+    expect(initialHtml).toContain("grid.is-dragging")
     expect(initialHtml).toContain("모든 참여자가 투표하면 결과가 표시됩니다.")
     expect(initialHtml).not.toContain('<div class="availability-matrix"')
 
@@ -63,6 +65,7 @@ describe("모임좌표 web availability board", () => {
     expect(updatedHtml).toContain("가능 시간이 저장되었습니다.")
     expect(updatedHtml).toContain("남은 사람: 태영")
     expect(updatedHtml).not.toContain('<div class="availability-matrix"')
+    expect(updatedHtml).toContain('class="slot selected"')
     expect(updatedHtml).toContain('value="2026-07-17T18:00" checked')
 
     const rejected = await service.fetch(

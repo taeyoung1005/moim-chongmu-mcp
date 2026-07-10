@@ -116,11 +116,12 @@ All spacing uses a 4px base.
 ### Slot Cell
 
 - **Structure**: label wrapping checkbox and time text.
-- **Variants**: unchecked, checked, hover.
+- **Variants**: unchecked, checked/selected, hover, dragging.
 - **Spacing**: `--space-1-5` vertical / `--space-2` horizontal.
-- **States**: default, hover, checked, focus through native checkbox.
+- **States**: default, hover, checked, focus through native checkbox, pointer-drag selecting, pointer-drag clearing.
 - **Accessibility**: entire row is clickable through label.
-- **Motion**: none.
+- **Interaction**: pointer drag starts from the first touched slot; dragging across slots applies that same select or clear state continuously, matching when2meet-style fast entry. Native checkbox behavior remains the fallback.
+- **Motion**: 120ms color transition only.
 
 ### Overlap Matrix
 
