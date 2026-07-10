@@ -18,7 +18,12 @@
 | Accent/primary | `--accent` | `#13795b` | n/a | Links, checkbox accent, primary button |
 | Accent/hover | `--accent-strong` | `#0d5d46` | n/a | Primary button hover |
 | Accent/soft | `--accent-soft` | `#eef5ef` | n/a | Slot hover |
-| Accent/on | `--on-accent` | `#ffffff` | n/a | Text on primary button |
+| Accent/on | `--on-accent` | `#ffffff` | n/a | Text on primary button and high-density heat cells |
+| Heat/empty | `--heat-0` | `#f5f7f4` | n/a | Zero-overlap matrix cells |
+| Heat/low | `--heat-1` | `#dbeee4` | n/a | Low-overlap matrix cells |
+| Heat/mid | `--heat-2` | `#add8bf` | n/a | Mid-overlap matrix cells |
+| Heat/high | `--heat-3` | `#62b985` | n/a | High-overlap matrix cells |
+| Heat/full | `--heat-4` | `#13795b` | n/a | Full-overlap matrix cells |
 | Status/success | `--ok` | `#e8f6ef` | n/a | Saved confirmation |
 | Status/error | `--bad` | `#fff0ee` | n/a | Submission errors |
 | Status/error text | `--bad-text` | `#a33a2d` | n/a | Error text |
@@ -81,7 +86,7 @@ All spacing uses a 4px base.
 - Page gutter: 32px desktop, 20px mobile.
 - Slot columns: `repeat(auto-fit, minmax(160px, 1fr))`, collapsing to one column under 520px.
 - Component dimensions: `--control-height` 44px, `--slot-height` 38px, `--checkbox-size` 18px, `--slot-column-min` 160px.
-- Heatmap dimensions: `--heat-label-width` 48px, `--heat-count-width` 40px.
+- Result matrix dimensions: `--time-column-width` 62px, `--date-column-width` 86px, `--matrix-cell-height` 42px.
 
 ### Rules
 
@@ -117,14 +122,15 @@ All spacing uses a 4px base.
 - **Accessibility**: entire row is clickable through label.
 - **Motion**: none.
 
-### Overlap Heatmap
+### Overlap Matrix
 
-- **Structure**: date section containing time label, horizontal fill bar, and count.
+- **Structure**: a best-time chip row followed by a matrix with sticky time labels, date columns, and count cells.
 - **Variants**: locked until all participants respond, empty `0/n`, partial, full.
-- **Spacing**: rows use `--space-2`; bar height uses `--space-3`.
+- **Spacing**: best chips use `--space-2`; matrix cells are 42px high with 86px date columns.
 - **States**: read-only summary.
-- **Accessibility**: count remains visible as text beside the bar.
+- **Accessibility**: each cell keeps `count/participantCount` visible as text and exposes available participant names via `title`.
 - **Motion**: none.
+- **Responsive**: the matrix keeps date/time geometry and scrolls horizontally on narrow webviews.
 
 ## 6. Motion & Interaction
 

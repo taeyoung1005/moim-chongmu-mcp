@@ -40,7 +40,7 @@ describe("모임좌표 web availability board", () => {
     expect(initialHtml).not.toContain("<select")
     expect(initialHtml).not.toContain("<datalist")
     expect(initialHtml).toContain("모든 참여자가 투표하면 결과가 표시됩니다.")
-    expect(initialHtml).not.toContain('<div class="heat-fill"')
+    expect(initialHtml).not.toContain('<div class="availability-matrix"')
 
     const submitted = await service.fetch(
       new Request(`${boardUrl}/availability`, {
@@ -62,7 +62,7 @@ describe("모임좌표 web availability board", () => {
     expect(updatedPage.status).toBe(200)
     expect(updatedHtml).toContain("가능 시간이 저장되었습니다.")
     expect(updatedHtml).toContain("남은 사람: 태영")
-    expect(updatedHtml).not.toContain('<div class="heat-fill"')
+    expect(updatedHtml).not.toContain('<div class="availability-matrix"')
     expect(updatedHtml).toContain('value="2026-07-17T18:00" checked')
 
     const rejected = await service.fetch(
@@ -97,9 +97,11 @@ describe("모임좌표 web availability board", () => {
     const resultPage = await service.fetch(new Request(`${boardUrl}?saved=1`))
     const resultHtml = await resultPage.text()
 
-    expect(resultHtml).toContain('class="heat-fill" style="--heat:100%"')
-    expect(resultHtml).toContain('class="heat-fill" style="--heat:50%"')
-    expect(resultHtml).toContain("<strong>2/2</strong>")
+    expect(resultHtml).toContain("availability-matrix")
+    expect(resultHtml).toContain('class="matrix-cell level-4"')
+    expect(resultHtml).toContain('class="matrix-cell level-2"')
+    expect(resultHtml).toContain("<strong>2</strong><span>/2</span>")
+    expect(resultHtml).toContain("<strong>1</strong><span>/2</span>")
   })
 })
 
