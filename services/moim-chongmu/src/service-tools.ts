@@ -3,6 +3,7 @@ import * as z from "zod/v4"
 
 import { fetchDrivingRoute } from "./adapters/kakao-directions.js"
 import { loadMoimSources } from "./adapters/moim-sources.js"
+import { resolveAvailabilityBoardReference } from "./availability-board-reference.js"
 import type { AvailabilityBoardStore } from "./availability-board-store.js"
 import {
   type AvailabilityBoard,
@@ -248,13 +249,17 @@ export function createMoimTools(input: {
       title: "채팅 공유문 만들기",
       description: "모임좌표가 자동 전송 없이 채팅방에 붙여넣을 공유/리마인드 문구를 만듭니다.",
       inputSchema: {
-        board: mcpAvailabilityBoardSchema,
+        board: z
+          .unknown()
+          .describe(
+            "가능 시간 보드의 UUID, 전체 보드 URL, 또는 create_availability_board의 boardState",
+          ),
         bestSlotIds: z.array(z.string().min(1).max(32)).max(10).optional(),
         placeName: z.string().min(1).max(120).optional(),
       },
       openWorldHint: false,
       handler: (args) => {
-        const board = parseAvailabilityBoardInput(args.board)
+        const board = resolveAvailabilityBoardReference(args.board, input.boardStore)
         if (board === undefined) return errorTextResult(formatBoardStateError())
         const validation = validateAvailabilityBoardState(board)
         if (!validation.ok) return errorTextResult(formatBoardStateError(validation.message))

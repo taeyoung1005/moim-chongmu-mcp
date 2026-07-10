@@ -108,4 +108,23 @@ describe("lenient tool inputs (as LLMs actually call them)", () => {
     })
     expect(text).toContain("참여자")
   })
+
+  it("make_chat_share_message accepts the board UUID returned by create_availability_board", async () => {
+    const created = await callToolText(service.fetch, "create_availability_board", {
+      title: "주말 저녁 모임",
+      dates: ["2026-07-11"],
+      timeWindows: ["18:00-20:00"],
+      participants: ["민지", "태영"],
+      slotMinutes: 60,
+    })
+    const boardId = /\/boards\/([0-9a-f-]{36})/.exec(created)?.[1]
+    expect(boardId).toBeDefined()
+    if (boardId === undefined) throw new Error("created board response did not contain a UUID")
+
+    const text = await callToolText(service.fetch, "make_chat_share_message", { board: boardId })
+
+    expect(text).toContain("### 리마인드")
+    expect(text).toContain("민지, 태영")
+    expect(text).not.toContain("보드 상태를 확인해 주세요")
+  })
 })
