@@ -21,7 +21,7 @@ export type MoimEnv = Readonly<Record<string, string | undefined>>
 
 export type SourcePolicy = {
   readonly label: string
-  readonly envKey: "KAKAO_REST_API_KEY"
+  readonly envKey: "KAKAO_MAP_JS_KEY"
 }
 
 export type SourceStatus = SourcePolicy & {
@@ -48,7 +48,7 @@ export type MoimSourceSnapshot = {
 export const sourcePolicies = {
   kakaoLocal: {
     label: "Kakao Local address/category search",
-    envKey: "KAKAO_REST_API_KEY",
+    envKey: "KAKAO_MAP_JS_KEY",
   },
 } as const satisfies Record<SourceKey, SourcePolicy>
 
@@ -209,9 +209,18 @@ function errorNote(error: unknown): string {
 }
 
 function withEnvDefaults(env: MoimEnv, options: KakaoLocalOptions): KakaoLocalOptions {
-  if (options.timeoutMs !== undefined) return options
-  const timeoutMs = parsePositiveInt(env["MOIM_COORDINATOR_LIVE_TIMEOUT_MS"])
-  return timeoutMs === undefined ? options : { ...options, timeoutMs }
+  const timeoutMs = options.timeoutMs ?? parsePositiveInt(env["MOIM_COORDINATOR_LIVE_TIMEOUT_MS"])
+  const kaOrigin = options.kaOrigin ?? parseOrigin(env["MOIM_COORDINATOR_PUBLIC_BASE_URL"])
+  return { ...options, timeoutMs, kaOrigin }
+}
+
+function parseOrigin(value: string | undefined): string | undefined {
+  if (value === undefined) return undefined
+  try {
+    return new URL(value).origin
+  } catch {
+    return undefined
+  }
 }
 
 function parsePositiveInt(value: string | undefined): number | undefined {

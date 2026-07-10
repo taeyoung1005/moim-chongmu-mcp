@@ -11,13 +11,17 @@ export type MoimResponse = {
 
 export type MoimFetcher = (
   url: string,
-  init?: { readonly headers: { readonly Authorization: string }; readonly signal?: AbortSignal },
+  init?: {
+    readonly headers: { readonly Authorization: string; readonly KA: string }
+    readonly signal?: AbortSignal
+  },
 ) => Promise<MoimResponse>
 
 export type KakaoLocalOptions = {
   readonly fetcher?: MoimFetcher | undefined
   readonly timeoutMs?: number | undefined
   readonly maxBytes?: number | undefined
+  readonly kaOrigin?: string | undefined
 }
 
 export class KakaoLocalError extends Error {
@@ -65,10 +69,30 @@ export async function resolveKakaoAddress(input: {
   const body = await fetchText(url, input.apiKey, input.options ?? {})
   const parsed = parseAddressResponse(body)
   const first = parsed.documents[0]
-  if (first === undefined) throw new KakaoLocalError("empty")
+  if (first === undefined) return resolveKakaoKeyword(input)
   return {
     label: input.label,
     address: first.address_name ?? input.address,
+    coordinates: parseCoordinates(first.x, first.y),
+  }
+}
+
+async function resolveKakaoKeyword(input: {
+  readonly label: string
+  readonly address: string
+  readonly apiKey: string
+  readonly options?: KakaoLocalOptions | undefined
+}): Promise<ResolvedOrigin> {
+  const url = new URL("https://dapi.kakao.com/v2/local/search/keyword.json")
+  url.searchParams.set("query", input.address)
+  url.searchParams.set("size", "1")
+
+  const body = await fetchText(url, input.apiKey, input.options ?? {})
+  const first = parsePlaceResponse(body).documents[0]
+  if (first === undefined) throw new KakaoLocalError("empty")
+  return {
+    label: input.label,
+    address: first.address_name || input.address,
     coordinates: parseCoordinates(first.x, first.y),
   }
 }
@@ -137,7 +161,10 @@ async function fetchText(url: URL, apiKey: string, options: KakaoLocalOptions): 
     })
     const response = await Promise.race([
       fetcher(url.toString(), {
-        headers: { Authorization: `KakaoAK ${apiKey}` },
+        headers: {
+          Authorization: `KakaoAK ${apiKey}`,
+          KA: kakaoAgentHeader(options.kaOrigin ?? "http://127.0.0.1"),
+        },
         signal: controller.signal,
       }),
       timeoutPromise,
@@ -149,6 +176,10 @@ async function fetchText(url: URL, apiKey: string, options: KakaoLocalOptions): 
   } finally {
     if (timeout !== undefined) clearTimeout(timeout)
   }
+}
+
+function kakaoAgentHeader(origin: string): string {
+  return `sdk/v2 os/javascript lang/ko device/web origin/${encodeURIComponent(origin)}`
 }
 
 async function readBoundedText(response: MoimResponse, maxBytes: number): Promise<string> {

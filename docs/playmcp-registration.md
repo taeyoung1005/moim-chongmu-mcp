@@ -49,7 +49,7 @@
 
 이 MCP는 기본적으로 인증 없는 read-only helper입니다. 서버는 외부 계정 로그인, 친구 목록, 채팅방 내용, 캘린더, 결제 정보를 읽거나 쓰지 않습니다. 가능 시간 보드는 서버 프로세스 메모리에 임시 저장되며(약 14일 후 자동 만료), 운영 DB나 장기 보관 저장소에 기록하지 않습니다. 보드 링크는 추측 불가능한 UUID로 발급되어 링크를 받은 사람만 열람할 수 있습니다.
 
-주소와 장소 추천은 기본 `fixture` mode에서 안정적으로 동작합니다. live mode를 켜고 `KAKAO_REST_API_KEY`를 제공한 경우에만 공식 지역 검색 API 경계 뒤에서 주소/장소 조회를 수행합니다. 외부 API가 실패하거나 timeout이 발생하면 raw upstream error를 노출하지 않고 안전한 안내와 fallback 응답을 반환합니다.
+주소와 장소 추천은 기본 `fixture` mode에서 안정적으로 동작합니다. live mode를 켜고 `KAKAO_MAP_JS_KEY`와 등록된 Endpoint 도메인을 제공한 경우 공식 지역 검색 API 경계 뒤에서 주소/장소 조회를 수행합니다. `KAKAO_REST_API_KEY`는 도로경로·이동시간 조회에만 사용합니다. 외부 API가 실패하거나 timeout이 발생하면 raw upstream error를 노출하지 않고 안전한 안내와 fallback 응답을 반환합니다.
 
 ## 심사 요청 메모
 

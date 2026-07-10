@@ -28,12 +28,12 @@ describe("moim-coordinate source adapters", () => {
       {
         key: "kakaoLocal",
         label: "Kakao Local address/category search",
-        envKey: "KAKAO_REST_API_KEY",
+        envKey: "KAKAO_MAP_JS_KEY",
         status: "fixture",
         note: "local fixture data",
       },
     ])
-    expect(sourcePolicies.kakaoLocal.envKey).toBe("KAKAO_REST_API_KEY")
+    expect(sourcePolicies.kakaoLocal.envKey).toBe("KAKAO_MAP_JS_KEY")
   })
 
   it("filters fixture places by requested category", async () => {
@@ -54,9 +54,11 @@ describe("moim-coordinate source adapters", () => {
   it("fetches Kakao Local through an injected live adapter", async () => {
     const requested: string[] = []
     const authHeaders: string[] = []
+    const kaHeaders: string[] = []
     const fetcher: MoimFetcher = async (url, init) => {
       requested.push(url)
       authHeaders.push(init?.headers.Authorization ?? "")
+      kaHeaders.push(init?.headers.KA ?? "")
       if (url.includes("/v2/local/search/address")) {
         return response(
           JSON.stringify({
@@ -93,15 +95,86 @@ describe("moim-coordinate source adapters", () => {
         midpoint: { x: 126.978, y: 37.5665 },
         categories: ["cafe"],
       },
-      { MOIM_COORDINATOR_DATA_MODE: "live", KAKAO_REST_API_KEY: "valid-kakao-secret" },
+      {
+        MOIM_COORDINATOR_DATA_MODE: "live",
+        MOIM_COORDINATOR_PUBLIC_BASE_URL: "https://moim-chongmu.example.com",
+        KAKAO_MAP_JS_KEY: "valid-kakao-key",
+      },
       { fetcher },
     )
 
     expect(requested.some((url) => url.includes("/v2/local/search/address.json"))).toBe(true)
     expect(requested.some((url) => url.includes("/v2/local/search/category.json"))).toBe(true)
-    expect(authHeaders.every((header) => header === "KakaoAK valid-kakao-secret")).toBe(true)
+    expect(authHeaders.every((header) => header === "KakaoAK valid-kakao-key")).toBe(true)
+    expect(
+      kaHeaders.every(
+        (header) =>
+          header ===
+          "sdk/v2 os/javascript lang/ko device/web origin/https%3A%2F%2Fmoim-chongmu.example.com",
+      ),
+    ).toBe(true)
     expect(snapshot.resolvedOrigins[0]?.coordinates).toEqual({ x: 126.978, y: 37.5665 })
     expect(snapshot.places[0]?.name).toBe("시청 카페")
+    expect(snapshot.sources[0]?.status).toBe("live-ready")
+  })
+
+  it("falls back to keyword search when a station name is not an address", async () => {
+    const requested: string[] = []
+    const fetcher: MoimFetcher = async (url) => {
+      requested.push(url)
+      if (url.includes("/v2/local/search/address")) {
+        return response(JSON.stringify({ documents: [] }))
+      }
+      if (url.includes("/v2/local/search/keyword")) {
+        return response(
+          JSON.stringify({
+            documents: [
+              {
+                id: "station-1",
+                place_name: "강남역 2호선",
+                address_name: "서울 강남구 역삼동",
+                x: "127.0276",
+                y: "37.4979",
+              },
+            ],
+          }),
+        )
+      }
+      return response(
+        JSON.stringify({
+          documents: [
+            {
+              id: "cafe-1",
+              place_name: "시청 카페",
+              address_name: "서울 중구",
+              x: "126.9790",
+              y: "37.5660",
+            },
+          ],
+        }),
+      )
+    }
+
+    const snapshot = await loadMoimSources(
+      {
+        origins: [{ label: "강남", address: "강남역" }],
+        midpoint: { x: 126.978, y: 37.5665 },
+        categories: ["cafe"],
+      },
+      {
+        MOIM_COORDINATOR_DATA_MODE: "live",
+        MOIM_COORDINATOR_PUBLIC_BASE_URL: "https://moim-chongmu.example.com",
+        KAKAO_MAP_JS_KEY: "valid-kakao-key",
+      },
+      { fetcher },
+    )
+
+    expect(requested.some((url) => url.includes("/v2/local/search/keyword.json"))).toBe(true)
+    expect(snapshot.resolvedOrigins[0]).toEqual({
+      label: "강남",
+      address: "서울 강남구 역삼동",
+      coordinates: { x: 127.0276, y: 37.4979 },
+    })
     expect(snapshot.sources[0]?.status).toBe("live-ready")
   })
 
@@ -112,7 +185,7 @@ describe("moim-coordinate source adapters", () => {
         midpoint: { x: 126.98, y: 37.54 },
         categories: ["restaurant"],
       },
-      { MOIM_COORDINATOR_DATA_MODE: "live", KAKAO_REST_API_KEY: "bad" },
+      { MOIM_COORDINATOR_DATA_MODE: "live", KAKAO_MAP_JS_KEY: "bad" },
     )
 
     expect(snapshot.mode).toBe("live")
@@ -160,7 +233,7 @@ describe("moim-coordinate source adapters", () => {
         {
           MOIM_COORDINATOR_DATA_MODE: "live",
           MOIM_COORDINATOR_LIVE_TIMEOUT_MS: edgeCase.name === "timeout" ? "1" : "7000",
-          KAKAO_REST_API_KEY: "valid-kakao-secret",
+          KAKAO_MAP_JS_KEY: "valid-kakao-secret",
         },
         {
           fetcher: edgeCase.fetcher,
@@ -200,7 +273,7 @@ describe("moim-coordinate source adapters", () => {
         midpoint: { x: 126.98, y: 37.54 },
         categories: ["cafe"],
       },
-      { MOIM_COORDINATOR_DATA_MODE: "live", KAKAO_REST_API_KEY: "valid-kakao-secret" },
+      { MOIM_COORDINATOR_DATA_MODE: "live", KAKAO_MAP_JS_KEY: "valid-kakao-secret" },
       { fetcher, maxBytes: 10 },
     )
 
@@ -239,7 +312,7 @@ describe("moim-coordinate source adapters", () => {
         midpoint: { x: 126.98, y: 37.54 },
         categories: ["cafe"],
       },
-      { MOIM_COORDINATOR_DATA_MODE: "live", KAKAO_REST_API_KEY: "valid-kakao-secret" },
+      { MOIM_COORDINATOR_DATA_MODE: "live", KAKAO_MAP_JS_KEY: "valid-kakao-secret" },
       { fetcher },
     )
 
