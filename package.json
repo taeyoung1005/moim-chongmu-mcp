@@ -1,0 +1,33 @@
+{
+  "name": "moim-chongmu-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "services/*"
+  ],
+  "scripts": {
+    "build": "tsc --build tsconfig.json",
+    "typecheck": "tsc --build tsconfig.json --pretty false",
+    "lint": "biome check package.json package-lock.json tsconfig.json tsconfig.base.json biome.json packages services",
+    "test": "vitest --run",
+    "start": "node services/moim-chongmu/dist/index.js",
+    "dev": "npm run build --workspace @playmcp/moim-chongmu --silent && node services/moim-chongmu/dist/index.js"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.0.8",
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "hono": "^4.12.27",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.2.6",
+    "@types/node": "^25.0.3",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.16"
+  },
+  "engines": {
+    "node": ">=22.18.0"
+  }
+}

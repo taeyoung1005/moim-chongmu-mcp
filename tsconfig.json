@@ -1,0 +1,4 @@
+{
+  "files": [],
+  "references": [{ "path": "./packages/mcp-common" }, { "path": "./services/moim-chongmu" }]
+}
