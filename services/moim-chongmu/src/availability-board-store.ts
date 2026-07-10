@@ -35,7 +35,9 @@ export function createAvailabilityBoardStore(
   function save(board: AvailabilityBoard): StoredAvailabilityBoard {
     pruneExpired(boards, nowMs())
     const stored = {
-      id: randomUUID().slice(0, 8),
+      // Full UUID (122-bit random) so the board link is an unguessable capability URL —
+      // only people who receive the link can open the board.
+      id: randomUUID(),
       board,
       participantPasswordHashes: {},
       expiresAtMs: nowMs() + ttlMs,

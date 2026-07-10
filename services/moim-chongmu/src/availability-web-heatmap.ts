@@ -24,7 +24,12 @@ function bestSlotChip(
   participantCount: number,
   index: number,
 ): string {
-  return `<div class="best-chip"><span>${index + 1}</span><strong>${escapeHtml(slot.date)} ${escapeHtml(slot.time)}</strong><em>${count}/${participantCount}</em></div>`
+  const [, month, day] = slot.date.split("-")
+  const label =
+    month === undefined || day === undefined
+      ? `${slot.date} ${slot.time}`
+      : `${month}/${day} ${slot.time}`
+  return `<div class="best-chip"><span>${index + 1}</span><strong>${escapeHtml(label)}</strong><em>${count}/${participantCount}</em></div>`
 }
 
 function dateHeader(date: string): string {

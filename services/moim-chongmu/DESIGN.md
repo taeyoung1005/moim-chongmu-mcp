@@ -2,7 +2,7 @@
 
 ## 1. Atmosphere & Identity
 
-모임좌표 웹 투표 화면은 카카오톡 링크에서 바로 열리는 조용한 조율 도구다. 서명은 밝은 종이 같은 배경 위에 얇은 초록 액센트와 조밀한 시간 슬롯을 올리는 것이다. 사용자는 설명을 읽는 대신 이름과 임시 비밀번호를 입력하고 가능한 시간을 체크한 뒤 저장한다. 결과는 모든 참여자가 응답한 뒤에만 열린다.
+모임좌표 웹 투표 화면은 카카오톡 링크에서 바로 열리는 조용한 조율 도구다. 서명은 밝은 종이 같은 배경 위에 부드러운 초록 액센트와 갭으로 분리된 둥근 시간 셀을 올리고, 카드를 은은한 그림자로 살짝 띄워 따뜻하고 친근하게 만드는 것이다. 사용자는 설명을 읽는 대신 이름과 임시 비밀번호를 입력하고 가능한 시간을 체크한 뒤 저장한다. 결과는 모든 참여자가 응답한 뒤에만 열린다.
 
 ## 2. Color
 
@@ -14,12 +14,12 @@
 | Surface/elevated | `--panel` | `#ffffff` | n/a | Form and summary panels |
 | Text/primary | `--ink` | `#17201c` | n/a | Headings and body |
 | Text/secondary | `--muted` | `#66746c` | n/a | Hints and metadata |
-| Border/default | `--line` | `#dfe6df` | n/a | Panel and slot borders |
+| Border/default | `--line` | `#e6ece6` | n/a | Panel and slot borders (hairline) |
 | Accent/primary | `--accent` | `#13795b` | n/a | Links, checkbox accent, primary button |
 | Accent/hover | `--accent-strong` | `#0d5d46` | n/a | Primary button hover |
 | Accent/soft | `--accent-soft` | `#eef5ef` | n/a | Slot hover |
 | Accent/on | `--on-accent` | `#ffffff` | n/a | Text on primary button and high-density heat cells |
-| Heat/empty | `--heat-0` | `#f5f7f4` | n/a | Zero-overlap matrix cells |
+| Heat/empty | `--heat-0` | `#f2f6f2` | n/a | Zero-overlap matrix cells |
 | Heat/low | `--heat-1` | `#dbeee4` | n/a | Low-overlap matrix cells |
 | Heat/mid | `--heat-2` | `#add8bf` | n/a | Mid-overlap matrix cells |
 | Heat/high | `--heat-3` | `#62b985` | n/a | High-overlap matrix cells |
@@ -85,7 +85,8 @@ All spacing uses a 4px base.
 - Max content width: 920px.
 - Page gutter: 32px desktop, 20px mobile.
 - Vote matrix columns: sticky 62px time column plus 84px date columns in a horizontal scroll container.
-- Component dimensions: `--control-height` 44px, `--vote-cell-height` 46px, `--vote-cell-width` 84px.
+- Component dimensions: `--control-height` 46px, `--submit-height` 52px, `--vote-cell-height` 46px, `--vote-cell-width` 84px.
+- Cell separation: `--gap-cell` 6px gap between grid cells (no inter-cell borders); grid containers carry `--gap-cell` inner padding.
 - Result matrix dimensions: `--time-column-width` 62px, `--date-column-width` 86px, `--matrix-cell-height` 42px.
 
 ### Rules
@@ -139,7 +140,8 @@ All spacing uses a 4px base.
 
 | Type | Duration | Easing | Usage |
 |---|---:|---|---|
-| Micro | 120ms | ease-out | Hover color changes |
+| Micro | 120ms | ease-out | Hover color changes, input focus ring |
+| Press | 120ms | ease-out | Primary button active nudge (`translateY(1px)`) |
 
 ### Rules
 
@@ -151,10 +153,14 @@ All spacing uses a 4px base.
 
 ### Strategy
 
-Mixed, leaning borders-only.
+Soft cards: hairline borders plus a low, diffuse shadow to lift surfaces, with generously rounded corners. Grids read as gapped rounded cells rather than hard ruled tables. Accent stays reserved for interaction and saved states, so the warmth comes from radius, spacing, and shadow — not extra color.
 
 | Type | Value | Usage |
 |---|---|---|
-| Default border | `1px solid var(--line)` | Panels, day groups, fields |
-| Radius | 8px panel / 6px control | Friendly but not pill-like |
-| Shadow | none | Avoid card-heavy marketing feel |
+| Default border | `1px solid var(--line)` (hairline `#e6ece6`) | Panels, headers, fields, cells |
+| Radius | `--radius-panel` 16px / `--radius-control` 12px / `--radius-cell` 10px / `--radius-pill` 999px | Rounded and friendly; pill for the primary button and best-time chips |
+| Shadow (soft) | `--shadow-soft` `0 1px 2px rgba(23,32,28,.05), 0 10px 28px rgba(23,32,28,.06)` | Header, panels, scroll containers, chips |
+| Shadow (button) | `--shadow-btn` `0 8px 20px rgba(19,121,91,.22)` | Primary submit button lift |
+| Cell separation | `--gap-cell` 6px gap, no inter-cell borders | Vote grid + overlap matrix |
+
+Full-bleed exception: on narrow webviews the vote grid and overlap matrix drop their radius and shadow and bleed to the screen edges for maximum horizontal room.
