@@ -26,12 +26,23 @@ export const mcpOriginSchema = z.object({
   coordinates: coordinatesSchema.optional(),
 })
 
-export const originSchema = mcpOriginSchema.refine(
-  (origin) => origin.address !== undefined || origin.coordinates !== undefined,
-  {
-    message: "출발지는 주소 또는 좌표가 필요합니다.",
-  },
-)
+// Accept a bare place-name/address string (what LLMs usually send) as well as a full object.
+const stringOriginSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(160)
+  .transform((value) => ({ label: value, address: value }))
+
+export const originSchema = z
+  .union([stringOriginSchema, mcpOriginSchema])
+  .refine(
+    (origin) =>
+      origin.address !== undefined || ("coordinates" in origin && origin.coordinates !== undefined),
+    {
+      message: "출발지는 주소 또는 좌표가 필요합니다.",
+    },
+  )
 
 export type OriginInput = z.infer<typeof originSchema>
 
@@ -47,6 +58,26 @@ const strictTimeWindowSchema = z.object({
   end: clockSchema,
 })
 
+// Accept a "HH:MM-HH:MM" (or "HH:MM~HH:MM") string as well as a {start, end} object.
+const stringTimeWindowSchema = z
+  .string()
+  .trim()
+  .refine(
+    (value) => {
+      const match = /^(\d{2}:\d{2})\s*[-~]\s*(\d{2}:\d{2})$/.exec(value)
+      if (match === null) return false
+      const [, start, end] = match
+      return start !== undefined && end !== undefined && isClock(start) && isClock(end)
+    },
+    { message: "시간대는 'HH:MM-HH:MM' 형식으로 입력해 주세요. 예: 12:00-20:00" },
+  )
+  .transform((value) => {
+    const [start = "", end = ""] = value.split(/\s*[-~]\s*/)
+    return { start, end }
+  })
+
+const timeWindowInputSchema = z.union([stringTimeWindowSchema, strictTimeWindowSchema])
+
 const availabilitySlotSchema = z
   .object({
     id: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/),
@@ -60,7 +91,7 @@ const availabilitySlotSchema = z
 export const createAvailabilityBoardInputSchema = z.object({
   title: z.string().min(1).max(120),
   dates: z.array(isoDateSchema).min(1).max(14),
-  timeWindows: z.array(strictTimeWindowSchema).max(4).default([]),
+  timeWindows: z.array(timeWindowInputSchema).max(4).default([]),
   startTime: clockSchema.optional(),
   endTime: clockSchema.optional(),
   participants: z.array(z.string().min(1).max(40)).min(1).max(30),

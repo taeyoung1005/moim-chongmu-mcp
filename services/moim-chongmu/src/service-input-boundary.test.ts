@@ -46,7 +46,7 @@ describe("모임좌표 service input boundaries", () => {
       const text = textFromToolResult(payload)
       expect(payload.result?.isError).toBe(true)
       expect(text).toContain("## 입력 오류")
-      expect(text).toContain("보드 입력값을 확인해 주세요")
+      expect(text).toContain("날짜")
       expect(text).not.toContain("not-a-dateT18:00")
       expect(text).not.toContain("2026-02-30T18:00")
       expect(text).not.toContain("MCP error -32602")

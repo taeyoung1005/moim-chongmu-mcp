@@ -57,11 +57,11 @@ export function createMoimTools(input: {
       },
       openWorldHint: false,
       handler: (args) => {
-        const board = safeCreateAvailabilityBoard(args)
-        if (board === undefined) return errorTextResult(formatCreateBoardError())
-        const stored = input.boardStore.save(board)
+        const result = safeCreateAvailabilityBoard(args)
+        if (!result.ok) return errorTextResult(formatCreateBoardError(result.message))
+        const stored = input.boardStore.save(result.board)
         return textResult(
-          formatBoardResult(board, { voteUrl: boardUrl(input.publicBaseUrl, stored.id) }),
+          formatBoardResult(result.board, { voteUrl: boardUrl(input.publicBaseUrl, stored.id) }),
         )
       },
     }),
@@ -240,15 +240,30 @@ export function createMoimTools(input: {
   ] satisfies readonly ToolDefinition[]
 }
 
-function safeCreateAvailabilityBoard(args: unknown): AvailabilityBoard | undefined {
+function safeCreateAvailabilityBoard(
+  args: unknown,
+):
+  | { readonly ok: true; readonly board: AvailabilityBoard }
+  | { readonly ok: false; readonly message: string } {
   const parsed = createAvailabilityBoardInputSchema.safeParse(args)
-  if (!parsed.success) return undefined
+  if (!parsed.success) return { ok: false, message: createInputHint(parsed.error) }
   try {
-    return createAvailabilityBoard(parsed.data)
-  } catch (error) {
-    if (error instanceof Error) return undefined
-    throw error
+    return { ok: true, board: createAvailabilityBoard(parsed.data) }
+  } catch {
+    // Keep internal (English) error details out of the user-facing message.
+    return { ok: false, message: "보드를 만들 수 없어요. 날짜와 시간대를 확인해 주세요." }
   }
+}
+
+function createInputHint(error: z.ZodError): string {
+  const fields = new Set(error.issues.map((issue) => String(issue.path[0] ?? "")))
+  if (fields.has("participants"))
+    return '참여자 이름을 최소 1명 알려주세요. 예: participants ["민지", "태영"]'
+  if (fields.has("timeWindows") || fields.has("startTime") || fields.has("endTime"))
+    return '시간대를 알려주세요. 예: timeWindows ["12:00-20:00"] 또는 startTime "12:00", endTime "20:00"'
+  if (fields.has("dates")) return '날짜를 YYYY-MM-DD로 알려주세요. 예: dates ["2026-07-11"]'
+  if (fields.has("title")) return "약속 제목(title)을 알려주세요."
+  return "보드 입력값을 확인해 주세요."
 }
 
 function parseOrigins(origins: unknown): readonly OriginInput[] | undefined {

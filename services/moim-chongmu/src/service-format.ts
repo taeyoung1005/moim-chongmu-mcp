@@ -50,8 +50,8 @@ export function formatBoardStateError(message = "보드 상태를 확인해 주�
   return ["## 입력 오류", "", message].join("\n")
 }
 
-export function formatCreateBoardError(): string {
-  return ["## 입력 오류", "", "보드 입력값을 확인해 주세요."].join("\n")
+export function formatCreateBoardError(message = "보드 입력값을 확인해 주세요."): string {
+  return ["## 입력 오류", "", message].join("\n")
 }
 
 export function formatMidpointError(message: string): string {

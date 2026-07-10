@@ -76,7 +76,7 @@ describe("모임좌표 service boundaries", () => {
       const text = textFromToolResult(payload)
       expect(payload.result?.isError).toBe(true)
       expect(text).toContain("## 입력 오류")
-      expect(text).toContain("보드 입력값을 확인해 주세요")
+      expect(text).toContain("시간대")
       expect(text).not.toContain("max 168 slots")
       expect(text).not.toContain("invalid time")
       expect(text).not.toContain("invalid time window")
