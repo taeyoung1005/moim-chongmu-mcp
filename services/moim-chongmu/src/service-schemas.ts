@@ -7,6 +7,27 @@ export const coordinatesSchema = z.object({
   y: z.number().finite(),
 })
 
+// LLMs send coordinates as {lat, lng}/{latitude, longitude} at least as often as {x, y} (x=lng, y=lat).
+export const lenientCoordinatesSchema = z
+  .object({
+    x: z.number().finite().optional(),
+    y: z.number().finite().optional(),
+    lat: z.number().finite().optional(),
+    latitude: z.number().finite().optional(),
+    lng: z.number().finite().optional(),
+    lon: z.number().finite().optional(),
+    longitude: z.number().finite().optional(),
+  })
+  .transform((value, ctx) => {
+    const x = value.x ?? value.lng ?? value.lon ?? value.longitude
+    const y = value.y ?? value.lat ?? value.latitude
+    if (x === undefined || y === undefined) {
+      ctx.addIssue({ code: "custom", message: "좌표는 {x, y} 또는 {lat, lng} 형식이어야 합니다." })
+      return z.NEVER
+    }
+    return { x, y }
+  })
+
 const isoDatePattern = /^\d{4}-\d{2}-\d{2}$/
 const clockPattern = /^\d{2}:\d{2}$/
 
@@ -23,7 +44,7 @@ export const clockSchema = z.string().refine(isClock, {
 export const mcpOriginSchema = z.object({
   label: z.string().trim().min(1).max(80),
   address: z.string().trim().min(1).max(160).optional(),
-  coordinates: coordinatesSchema.optional(),
+  coordinates: lenientCoordinatesSchema.optional(),
 })
 
 // Accept a bare place-name/address string (what LLMs usually send) as well as a full object.

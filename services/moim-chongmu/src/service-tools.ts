@@ -26,8 +26,8 @@ import {
   formatSourceStatuses,
 } from "./service-format.js"
 import {
-  coordinatesSchema,
   createAvailabilityBoardInputSchema,
+  lenientCoordinatesSchema,
   mcpAvailabilityBoardSchema,
   type OriginInput,
   originListSchema,
@@ -117,14 +117,20 @@ export function createMoimTools(input: {
       handler: async ({ origins }) => {
         const parsedOrigins = parseOrigins(origins)
         if (parsedOrigins === undefined) {
-          return errorTextResult(formatMidpointError("at least 2 resolved origins are required"))
+          return errorTextResult(
+            formatMidpointError(
+              '출발지를 2곳 이상 알려주세요. 예: ["강남역", "홍대역"] 또는 [{"label":"집","lat":37.5,"lng":127.0}]',
+            ),
+          )
         }
         const sources = await loadMoimSources({
           origins: parsedOrigins,
           midpoint: { x: 126.98, y: 37.54 },
         })
         const result = findMidpoint({ origins: sources.resolvedOrigins })
-        if (!result.ok) return errorTextResult(formatMidpointError(result.error.message))
+        if (!result.ok) {
+          return errorTextResult(formatMidpointError("출발지를 2곳 이상 알려주세요."))
+        }
         const stored = input.meetStore.save({
           origins: sources.resolvedOrigins.map(toMeetOrigin),
           midpoint: result.value.midpoint,
@@ -167,16 +173,24 @@ export function createMoimTools(input: {
       handler: async ({ midpoint, origins, categories, radiusMeters, limit }) => {
         const parsedOrigins = origins === undefined ? [] : parseOrigins(origins)
         if (parsedOrigins === undefined) {
-          return errorTextResult(formatMidpointError("at least 2 resolved origins are required"))
+          return errorTextResult(
+            formatMidpointError('출발지 형식을 확인해 주세요. 예: origins ["강남역", "홍대역"]'),
+          )
         }
         const parsedMidpoint =
-          midpoint === undefined ? undefined : coordinatesSchema.safeParse(midpoint)
+          midpoint === undefined ? undefined : lenientCoordinatesSchema.safeParse(midpoint)
         if (parsedMidpoint !== undefined && !parsedMidpoint.success) {
-          return errorTextResult(formatMidpointError("at least 2 resolved origins are required"))
+          return errorTextResult(
+            formatMidpointError(
+              '중간지점 좌표 형식을 확인해 주세요. 예: {"lat":37.5,"lng":127.0} 또는 {"x":127.0,"y":37.5}',
+            ),
+          )
         }
         const resolvedMidpoint = parsedMidpoint?.data ?? (await midpointFromOrigins(parsedOrigins))
         if (resolvedMidpoint === undefined) {
-          return errorTextResult(formatMidpointError("at least 2 resolved origins are required"))
+          return errorTextResult(
+            formatMidpointError("출발지를 2곳 이상 알려주거나, 중간지점 좌표를 알려주세요."),
+          )
         }
         const sources = await loadMoimSources({
           origins: parsedOrigins,
@@ -261,7 +275,10 @@ function createInputHint(error: z.ZodError): string {
     return '참여자 이름을 최소 1명 알려주세요. 예: participants ["민지", "태영"]'
   if (fields.has("timeWindows") || fields.has("startTime") || fields.has("endTime"))
     return '시간대를 알려주세요. 예: timeWindows ["12:00-20:00"] 또는 startTime "12:00", endTime "20:00"'
-  if (fields.has("dates")) return '날짜를 YYYY-MM-DD로 알려주세요. 예: dates ["2026-07-11"]'
+  if (fields.has("dates"))
+    return '날짜를 YYYY-MM-DD로, 최대 14일까지 알려주세요. 예: dates ["2026-07-11"]'
+  if (fields.has("slotMinutes"))
+    return "슬롯 단위는 30분 또는 60분만 됩니다. slotMinutes: 30 또는 60."
   if (fields.has("title")) return "약속 제목(title)을 알려주세요."
   return "보드 입력값을 확인해 주세요."
 }
