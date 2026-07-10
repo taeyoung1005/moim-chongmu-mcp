@@ -6,3 +6,4 @@ services/*/dist/
 !**/.env.example
 .DS_Store
 npm-debug.log*
+services/*/mockups/

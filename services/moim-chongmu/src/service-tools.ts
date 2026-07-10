@@ -6,13 +6,17 @@ import type { AvailabilityBoardStore } from "./availability-board-store.js"
 import {
   type AvailabilityBoard,
   createAvailabilityBoard,
+  distanceMeters,
   findMidpoint,
   makeChatShareMessage,
   markAvailability,
+  type RecommendedPlace,
+  type ResolvedOrigin,
   recommendMidpointPlaces,
   summarizeBestTimes,
   validateAvailabilityBoardState,
 } from "./domain/moim.js"
+import type { MeetPlanOrigin, MeetPlanPlace, MeetPlanStore } from "./meet-plan-store.js"
 import {
   formatAvailabilityError,
   formatBoardResult,
@@ -33,6 +37,7 @@ import {
 
 export function createMoimTools(input: {
   readonly boardStore: AvailabilityBoardStore
+  readonly meetStore: MeetPlanStore
   readonly publicBaseUrl: string
 }): readonly ToolDefinition[] {
   return [
@@ -120,6 +125,14 @@ export function createMoimTools(input: {
         })
         const result = findMidpoint({ origins: sources.resolvedOrigins })
         if (!result.ok) return errorTextResult(formatMidpointError(result.error.message))
+        const stored = input.meetStore.save({
+          origins: sources.resolvedOrigins.map(toMeetOrigin),
+          midpoint: result.value.midpoint,
+          fairness: result.value.fairnessRows,
+          places: [],
+          mode: sources.mode,
+          sourceNote: sourceNote(sources.sources),
+        })
         return textResult(
           [
             "## 모임좌표 중간지점",
@@ -129,6 +142,9 @@ export function createMoimTools(input: {
             ...result.value.fairnessRows.map(
               (row) => `- ${row.originLabel}: 약 ${row.distanceMeters.toLocaleString("ko-KR")}m`,
             ),
+            "",
+            "### 지도",
+            `- 지도 보기: ${meetUrl(input.publicBaseUrl, stored.id)}`,
             "",
             "### 소스 상태",
             formatSourceStatuses(sources.sources),
@@ -172,6 +188,17 @@ export function createMoimTools(input: {
         const places = sources.places.length
           ? sources.places
           : recommendMidpointPlaces({ midpoint: resolvedMidpoint, categories, limit, places: [] })
+        const stored = input.meetStore.save({
+          origins: sources.resolvedOrigins.map(toMeetOrigin),
+          midpoint: resolvedMidpoint,
+          fairness: sources.resolvedOrigins.map((origin) => ({
+            originLabel: origin.label,
+            distanceMeters: Math.round(distanceMeters(origin.coordinates, resolvedMidpoint)),
+          })),
+          places: places.map(toMeetPlace),
+          mode: sources.mode,
+          sourceNote: sourceNote(sources.sources),
+        })
         return textResult(
           [
             "## 모임좌표 중간 장소 후보",
@@ -182,6 +209,9 @@ export function createMoimTools(input: {
                   "ko-KR",
                 )}m${place.placeUrl === undefined ? "" : ` (${place.placeUrl})`}`,
             ),
+            "",
+            "### 지도",
+            `- 지도 보기: ${meetUrl(input.publicBaseUrl, stored.id)}`,
             "",
             "### 소스 상태",
             formatSourceStatuses(sources.sources),
@@ -243,4 +273,33 @@ function voteUrl(
 
 function boardUrl(publicBaseUrl: string, id: string): string {
   return `${publicBaseUrl.replace(/\/+$/, "")}/boards/${encodeURIComponent(id)}`
+}
+
+function meetUrl(publicBaseUrl: string, id: string): string {
+  return `${publicBaseUrl.replace(/\/+$/, "")}/meet/${encodeURIComponent(id)}`
+}
+
+function toMeetOrigin(origin: ResolvedOrigin): MeetPlanOrigin {
+  return {
+    label: origin.label,
+    address: origin.address,
+    x: origin.coordinates.x,
+    y: origin.coordinates.y,
+  }
+}
+
+function toMeetPlace(place: RecommendedPlace): MeetPlanPlace {
+  return {
+    name: place.name,
+    address: place.address,
+    x: place.coordinates.x,
+    y: place.coordinates.y,
+    categoryCode: place.categoryCode,
+    placeUrl: place.placeUrl,
+    distanceMeters: place.distanceMeters,
+  }
+}
+
+function sourceNote(sources: readonly { readonly note: string }[]): string {
+  return sources.map((source) => source.note).join("; ")
 }
