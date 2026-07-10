@@ -84,20 +84,20 @@ All spacing uses a 4px base.
 
 - Max content width: 920px.
 - Page gutter: 32px desktop, 20px mobile.
-- Slot columns: `repeat(auto-fit, minmax(160px, 1fr))`, collapsing to one column under 520px.
-- Component dimensions: `--control-height` 44px, `--slot-height` 38px, `--checkbox-size` 18px, `--slot-column-min` 160px.
+- Vote matrix columns: sticky 62px time column plus 84px date columns in a horizontal scroll container.
+- Component dimensions: `--control-height` 44px, `--vote-cell-height` 46px, `--vote-cell-width` 84px.
 - Result matrix dimensions: `--time-column-width` 62px, `--date-column-width` 86px, `--matrix-cell-height` 42px.
 
 ### Rules
 
-- The first viewport must show title, status, participant field, and at least the first day of slots.
-- Slot height is stable at 38px minimum.
+- The first viewport must show title, status, participant field, and the top of the availability matrix.
+- Vote cell dimensions are stable so dragging does not shift the grid.
 
 ## 5. Components
 
 ### Vote Panel
 
-- **Structure**: `form.panel` containing participant name input, temporary password input, day grid, optional note, submit button.
+- **Structure**: `form.panel` containing participant name input, temporary password input, availability matrix, optional note, submit button.
 - **Variants**: default, compact summary panel.
 - **Spacing**: `--space-5` desktop padding, `--space-3-5` mobile padding.
 - **States**: default, success alert, error alert.
@@ -113,14 +113,14 @@ All spacing uses a 4px base.
 - **Accessibility**: native password input with label and autocomplete.
 - **Motion**: none.
 
-### Slot Cell
+### Vote Matrix Cell
 
-- **Structure**: label wrapping checkbox and time text.
+- **Structure**: label cell in a date-column/time-row matrix, wrapping a visually hidden native checkbox.
 - **Variants**: unchecked, checked/selected, hover, dragging.
-- **Spacing**: `--space-1-5` vertical / `--space-2` horizontal.
+- **Spacing**: 46px minimum cell height, 84px date column width.
 - **States**: default, hover, checked, focus through native checkbox, pointer-drag selecting, pointer-drag clearing.
-- **Accessibility**: entire row is clickable through label.
-- **Interaction**: pointer drag starts from the first touched slot; dragging across slots applies that same select or clear state continuously, matching when2meet-style fast entry. Native checkbox behavior remains the fallback.
+- **Accessibility**: entire cell is clickable through label; native checkbox remains in the DOM for form submission and fallback.
+- **Interaction**: pointer drag starts from the first touched cell; dragging across cells applies that same select or clear state continuously, matching when2meet-style fast entry.
 - **Motion**: 120ms color transition only.
 
 ### Overlap Matrix
