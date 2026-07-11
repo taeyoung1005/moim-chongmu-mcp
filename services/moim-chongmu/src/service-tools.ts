@@ -47,7 +47,7 @@ export function createMoimTools(input: {
     defineTool({
       name: "create_availability_board",
       title: "가능 시간 보드 만들기",
-      description: "모임좌표가 when2meet처럼 가능한 시간 보드와 빈 heatmap을 만듭니다.",
+      description: "모임총무가 when2meet처럼 가능한 시간 보드와 빈 heatmap을 만듭니다.",
       inputSchema: {
         title: z.unknown().optional(),
         dates: z.unknown().optional(),
@@ -71,7 +71,7 @@ export function createMoimTools(input: {
     defineTool({
       name: "mark_availability",
       title: "가능 시간 표시",
-      description: "모임좌표가 한 참여자의 가능 시간을 stateHash 기준으로 갱신합니다.",
+      description: "모임총무가 한 참여자의 가능 시간을 stateHash 기준으로 갱신합니다.",
       inputSchema: {
         state: mcpAvailabilityBoardSchema,
         participant: z.string().min(1).max(40),
@@ -97,7 +97,7 @@ export function createMoimTools(input: {
     defineTool({
       name: "summarize_best_times",
       title: "겹치는 시간 요약",
-      description: "모임좌표가 가능 시간 heatmap과 미응답자를 요약합니다.",
+      description: "모임총무가 가능 시간 heatmap과 미응답자를 요약합니다.",
       inputSchema: {
         state: mcpAvailabilityBoardSchema,
         limit: z.number().int().min(1).max(10).default(5),
@@ -114,7 +114,7 @@ export function createMoimTools(input: {
     defineTool({
       name: "find_midpoint",
       title: "중간 좌표 찾기",
-      description: "모임좌표가 출발지 좌표나 주소 fixture를 기준으로 중간지점을 계산합니다.",
+      description: "모임총무가 출발지 좌표나 주소 fixture를 기준으로 중간지점을 계산합니다.",
       inputSchema: { origins: z.unknown() },
       openWorldHint: true,
       handler: async ({ origins }) => {
@@ -168,7 +168,7 @@ export function createMoimTools(input: {
     defineTool({
       name: "recommend_midpoint_places",
       title: "중간 장소 추천",
-      description: "모임좌표가 중간지점 주변의 만날 장소 후보를 fixture-safe 방식으로 추천합니다.",
+      description: "모임총무가 중간지점 주변의 만날 장소 후보를 fixture-safe 방식으로 추천합니다.",
       inputSchema: {
         midpoint: z.unknown().optional(),
         origins: z.unknown().optional(),
@@ -247,7 +247,7 @@ export function createMoimTools(input: {
     defineTool({
       name: "make_chat_share_message",
       title: "채팅 공유문 만들기",
-      description: "모임좌표가 자동 전송 없이 채팅방에 붙여넣을 공유/리마인드 문구를 만듭니다.",
+      description: "모임총무가 자동 전송 없이 채팅방에 붙여넣을 공유/리마인드 문구를 만듭니다.",
       inputSchema: {
         board: z
           .unknown()

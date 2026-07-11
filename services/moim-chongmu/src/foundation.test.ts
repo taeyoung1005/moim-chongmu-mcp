@@ -46,8 +46,6 @@ const expectedTools = [
   "make_chat_share_message",
 ] as const
 
-const previousServiceName = ["모임", "총무"].join("")
-
 describe("모임좌표 foundation HTTP surface", () => {
   it("returns service identity from health when requested", async () => {
     // Given
@@ -79,10 +77,7 @@ describe("모임좌표 foundation HTTP surface", () => {
 
     // Then
     expect(payload.result.tools.map((tool) => tool.name)).toEqual(expectedTools)
-    expect(payload.result.tools.every((tool) => tool.description.includes("모임좌표"))).toBe(true)
-    expect(payload.result.tools.map((tool) => tool.description).join(" ")).not.toContain(
-      previousServiceName,
-    )
+    expect(payload.result.tools.every((tool) => tool.description.includes("모임총무"))).toBe(true)
   })
 
   it("creates an availability board with a when2meet-style heatmap", async () => {
