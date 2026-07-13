@@ -127,6 +127,16 @@ describe("lenient tool inputs (as LLMs actually call them)", () => {
     expect(text).toContain("참여자")
   })
 
+  it("does not treat station names as availability-board participants", async () => {
+    const text = await callToolText(service.fetch, "create_availability_board", {
+      title: "휴일 약속",
+      dates: ["2026-07-13"],
+      timeWindows: ["10:00-23:00"],
+      participants: ["강남역", "홍대역", "이수역"],
+    })
+    expect(text).toContain("출발지·역 이름은 참가자가 아닙니다")
+  })
+
   it("make_chat_share_message accepts the board UUID returned by create_availability_board", async () => {
     const created = await callToolText(service.fetch, "create_availability_board", {
       title: "주말 저녁 모임",

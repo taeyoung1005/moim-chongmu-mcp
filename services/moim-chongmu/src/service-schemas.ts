@@ -133,7 +133,18 @@ export const createAvailabilityBoardInputSchema = z.object({
   timeWindows: z.array(timeWindowInputSchema).max(4).default([]),
   startTime: clockSchema.optional(),
   endTime: clockSchema.optional(),
-  participants: z.array(z.string().min(1).max(40)).min(1).max(30),
+  participants: z
+    .array(
+      z
+        .string()
+        .min(1)
+        .max(40)
+        .refine((participant) => !/역\s*$/.test(participant.trim()), {
+          message: "참가자에는 역 이름이 아닌 실제 사람 이름을 넣어야 합니다.",
+        }),
+    )
+    .min(1)
+    .max(30),
   slotMinutes: z.union([z.literal(30), z.literal(60)]).default(30),
   note: z.string().min(1).max(400).optional(),
 })

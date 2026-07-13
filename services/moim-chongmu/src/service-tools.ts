@@ -52,7 +52,8 @@ export function createMoimTools(input: {
     defineTool({
       name: "create_availability_board",
       title: "가능 시간 보드 만들기",
-      description: "모임총무가 when2meet처럼 가능한 시간 보드와 빈 heatmap을 만듭니다.",
+      description:
+        "모임총무가 when2meet처럼 가능한 시간 보드와 빈 heatmap을 만듭니다. 실제 참가자 이름을 반드시 받은 뒤에만 호출하세요. 출발지·역·장소 이름을 참가자 이름으로 추정하거나 participants에 넣으면 안 됩니다.",
       inputSchema: {
         title: z.unknown().optional(),
         dates: z.unknown().optional(),
@@ -316,7 +317,7 @@ function safeCreateAvailabilityBoard(
 function createInputHint(error: z.ZodError): string {
   const fields = new Set(error.issues.map((issue) => String(issue.path[0] ?? "")))
   if (fields.has("participants"))
-    return '참여자 이름을 최소 1명 알려주세요. 예: participants ["민지", "태영"]'
+    return '참여자 이름을 알려주세요. 출발지·역 이름은 참가자가 아닙니다. 예: participants ["민지", "태영"]'
   if (fields.has("timeWindows") || fields.has("startTime") || fields.has("endTime"))
     return '시간대를 알려주세요. 예: timeWindows ["12:00-20:00"] 또는 startTime "12:00", endTime "20:00"'
   if (fields.has("dates"))
