@@ -53,16 +53,30 @@ export function createMoimTools(input: {
       name: "create_availability_board",
       title: "가능 시간 보드 만들기",
       description:
-        "모임총무가 when2meet처럼 가능한 시간 보드와 빈 heatmap을 만듭니다. 실제 참가자 이름을 반드시 받은 뒤에만 호출하세요. 출발지·역·장소 이름을 참가자 이름으로 추정하거나 participants에 넣으면 안 됩니다.",
+        "모임총무가 when2meet처럼 가능한 시간 보드와 빈 heatmap을 만듭니다. 사용자가 약속 제목·날짜·시간대·실제 참가자 이름을 모두 직접 말한 경우에만 호출하세요. 참가자 이름을 알 수 없으면 질문으로 확인해야 하며, 출발지·역·장소 이름을 사람 이름으로 추론하면 안 됩니다.",
       inputSchema: {
-        title: z.unknown().optional(),
-        dates: z.unknown().optional(),
-        timeWindows: z.unknown().optional(),
-        startTime: z.unknown().optional(),
-        endTime: z.unknown().optional(),
-        participants: z.unknown().optional(),
-        slotMinutes: z.unknown().optional(),
-        note: z.unknown().optional(),
+        title: z
+          .unknown()
+          .optional()
+          .describe("필수. 사용자가 직접 말한 약속 제목입니다. 제목이 없으면 먼저 질문합니다."),
+        dates: z
+          .unknown()
+          .optional()
+          .describe("필수. 사용자가 직접 말한 후보 날짜 목록(YYYY-MM-DD)입니다."),
+        timeWindows: z
+          .unknown()
+          .optional()
+          .describe('필수. 사용자가 직접 말한 후보 시간대입니다. 예: ["10:00-23:00"].'),
+        startTime: z.unknown().optional().describe("timeWindows 대신 쓰는 시작 시각(HH:mm)입니다."),
+        endTime: z.unknown().optional().describe("timeWindows 대신 쓰는 종료 시각(HH:mm)입니다."),
+        participants: z
+          .unknown()
+          .optional()
+          .describe(
+            "필수. 사용자가 대화에서 직접 밝힌 실제 사람 이름 목록입니다. 출발지·역·장소에서 사람 이름을 추론해 넣지 마세요. 이름이 없으면 도구를 호출하지 말고 먼저 질문합니다.",
+          ),
+        slotMinutes: z.unknown().optional().describe("선택. 30 또는 60분 단위입니다."),
+        note: z.unknown().optional().describe("선택. 참여자에게 보일 안내 문구입니다."),
       },
       openWorldHint: false,
       handler: (args) => {
@@ -317,7 +331,7 @@ function safeCreateAvailabilityBoard(
 function createInputHint(error: z.ZodError): string {
   const fields = new Set(error.issues.map((issue) => String(issue.path[0] ?? "")))
   if (fields.has("participants"))
-    return '참여자 이름을 알려주세요. 출발지·역 이름은 참가자가 아닙니다. 예: participants ["민지", "태영"]'
+    return '참여자 이름을 알려주세요. 예: participants ["민지", "태영"]'
   if (fields.has("timeWindows") || fields.has("startTime") || fields.has("endTime"))
     return '시간대를 알려주세요. 예: timeWindows ["12:00-20:00"] 또는 startTime "12:00", endTime "20:00"'
   if (fields.has("dates"))

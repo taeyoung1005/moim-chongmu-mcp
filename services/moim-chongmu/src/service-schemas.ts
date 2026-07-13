@@ -128,23 +128,30 @@ const availabilitySlotSchema = z
   })
 
 export const createAvailabilityBoardInputSchema = z.object({
-  title: z.string().min(1).max(120),
-  dates: z.array(isoDateSchema).min(1).max(14),
-  timeWindows: z.array(timeWindowInputSchema).max(4).default([]),
+  title: z
+    .string()
+    .min(1)
+    .max(120)
+    .describe("사용자가 정한 약속 제목입니다. 제목이 없으면 먼저 물어보세요."),
+  dates: z
+    .array(isoDateSchema)
+    .min(1)
+    .max(14)
+    .describe("약속 후보 날짜입니다. YYYY-MM-DD 형식을 사용합니다."),
+  timeWindows: z
+    .array(timeWindowInputSchema)
+    .max(4)
+    .default([])
+    .describe('각 날짜의 후보 시간대입니다. 예: ["10:00-23:00"]'),
   startTime: clockSchema.optional(),
   endTime: clockSchema.optional(),
   participants: z
-    .array(
-      z
-        .string()
-        .min(1)
-        .max(40)
-        .refine((participant) => !/역\s*$/.test(participant.trim()), {
-          message: "참가자에는 역 이름이 아닌 실제 사람 이름을 넣어야 합니다.",
-        }),
-    )
+    .array(z.string().trim().min(1).max(40))
     .min(1)
-    .max(30),
+    .max(30)
+    .describe(
+      "사용자가 대화에서 직접 밝힌 실제 참가자 이름 목록입니다. 출발지·역·장소에서 이름을 추론하지 말고, 참가자 이름을 받지 못했다면 이 도구를 호출하지 말고 먼저 물어보세요.",
+    ),
   slotMinutes: z.union([z.literal(30), z.literal(60)]).default(30),
   note: z.string().min(1).max(400).optional(),
 })
