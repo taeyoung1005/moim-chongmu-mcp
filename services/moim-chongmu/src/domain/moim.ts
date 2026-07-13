@@ -24,6 +24,7 @@ export type {
   Coordinates,
   FairnessRow,
   MeetingOrigin,
+  MidpointBasis,
   MidpointResult,
   PlaceCandidate,
   PlaceCategory,

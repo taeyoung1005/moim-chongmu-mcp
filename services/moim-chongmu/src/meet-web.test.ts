@@ -62,7 +62,10 @@ describe("모임좌표 meet result page", () => {
 
   it("find_midpoint returns a /meet link", async () => {
     const service = createMoimChongmuService({ publicBaseUrl: "http://moim.test" })
-    const text = await callToolText(service.fetch, "find_midpoint", { origins })
+    const text = await callToolText(service.fetch, "find_midpoint", {
+      origins,
+      basis: "distance",
+    })
     expect(text).toContain("/meet/")
   })
 

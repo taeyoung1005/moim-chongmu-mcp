@@ -32,6 +32,7 @@ describe("lenient tool inputs (as LLMs actually call them)", () => {
   it("find_midpoint accepts a plain array of place-name strings", async () => {
     const text = await callToolText(service.fetch, "find_midpoint", {
       origins: ["강남역", "서울역"],
+      basis: "distance",
     })
     expect(text).toContain("중간지점")
     expect(text).toContain("/meet/")
@@ -52,6 +53,7 @@ describe("lenient tool inputs (as LLMs actually call them)", () => {
         { label: "집", coordinates: { lat: 37.5, lng: 127.0 } },
         { label: "회사", coordinates: { lat: 37.55, lng: 127.05 } },
       ],
+      basis: "distance",
     })
     expect(text).toContain("/meet/")
     expect(text).not.toContain("계산할 수 없습니다")
@@ -63,9 +65,25 @@ describe("lenient tool inputs (as LLMs actually call them)", () => {
         { label: "나", lat: 37.5, lng: 127.0 },
         { lat: 37.55, lng: 127.05 },
       ],
+      basis: "distance",
     })
     expect(text).toContain("/meet/")
     expect(text).not.toContain("계산할 수 없습니다")
+  })
+
+  it("find_midpoint accepts PlayMCP {name, lat, lon} origins for transit time", async () => {
+    const text = await callToolText(service.fetch, "find_midpoint", {
+      origins: [
+        { name: "Gangnam", lat: 37.497175, lon: 127.027926 },
+        { name: "Hongdae", lat: 37.556335, lon: 126.923654 },
+        { name: "Oryudong", lat: 37.494612, lon: 126.844633 },
+      ],
+      basis: "public_transit_time",
+    })
+    expect(text).toContain("대중교통 중간지점")
+    expect(text).toContain("Gangnam")
+    expect(text).toContain("Hongdae")
+    expect(text).toContain("Oryudong")
   })
 
   it("recommend_midpoint_places accepts a midpoint given as {lat, lng}", async () => {

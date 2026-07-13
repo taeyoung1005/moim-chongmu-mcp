@@ -16,12 +16,12 @@ import {
 
 export type MoimDataMode = "fixture" | "live"
 export type SourceStatusKind = "fixture" | "live-ready" | "unavailable"
-export type SourceKey = "kakaoLocal"
+export type SourceKey = "kakaoLocal" | "odsayTransit"
 export type MoimEnv = Readonly<Record<string, string | undefined>>
 
 export type SourcePolicy = {
   readonly label: string
-  readonly envKey: "KAKAO_MAP_JS_KEY"
+  readonly envKey: "KAKAO_MAP_JS_KEY" | "ODSAY_API_KEY"
 }
 
 export type SourceStatus = SourcePolicy & {
@@ -49,6 +49,10 @@ export const sourcePolicies = {
   kakaoLocal: {
     label: "Kakao Local address/category search",
     envKey: "KAKAO_MAP_JS_KEY",
+  },
+  odsayTransit: {
+    label: "ODsay public transit route search",
+    envKey: "ODSAY_API_KEY",
   },
 } as const satisfies Record<SourceKey, SourcePolicy>
 

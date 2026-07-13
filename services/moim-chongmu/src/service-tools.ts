@@ -2,7 +2,10 @@ import { defineTool, errorTextResult, type ToolDefinition, textResult } from "@p
 import * as z from "zod/v4"
 
 import { fetchDrivingRoute } from "./adapters/kakao-directions.js"
+import type { MoimEnv } from "./adapters/moim-sources.js"
 import { loadMoimSources } from "./adapters/moim-sources.js"
+import type { OdsayOptions } from "./adapters/odsay-transit.js"
+import { planTransitMidpoint, type TransitMidpointPlan } from "./adapters/transit-midpoint.js"
 import { resolveAvailabilityBoardReference } from "./availability-board-reference.js"
 import type { AvailabilityBoardStore } from "./availability-board-store.js"
 import {
@@ -42,6 +45,8 @@ export function createMoimTools(input: {
   readonly meetStore: MeetPlanStore
   readonly publicBaseUrl: string
   readonly routeApiKey?: string | undefined
+  readonly moimEnv?: MoimEnv | undefined
+  readonly odsayOptions?: OdsayOptions | undefined
 }): readonly ToolDefinition[] {
   return [
     defineTool({
@@ -114,10 +119,13 @@ export function createMoimTools(input: {
     defineTool({
       name: "find_midpoint",
       title: "중간 좌표 찾기",
-      description: "모임총무가 출발지 좌표나 주소 fixture를 기준으로 중간지점을 계산합니다.",
-      inputSchema: { origins: z.unknown() },
+      description: "모임총무가 거리 또는 실제 대중교통 시간 기준으로 중간지점을 계산합니다.",
+      inputSchema: {
+        origins: z.unknown(),
+        basis: z.union([z.literal("distance"), z.literal("public_transit_time")]).optional(),
+      },
       openWorldHint: true,
-      handler: async ({ origins }) => {
+      handler: async ({ origins, basis }) => {
         const parsedOrigins = parseOrigins(origins)
         if (parsedOrigins === undefined) {
           return errorTextResult(
@@ -126,11 +134,32 @@ export function createMoimTools(input: {
             ),
           )
         }
+        if (basis === undefined) {
+          return textResult(
+            [
+              "## 중간지점 기준을 선택해 주세요",
+              "",
+              "- `distance`: 출발지와의 거리 균형 기준",
+              "- `public_transit_time`: ODsay 실제 대중교통 소요시간 기준",
+            ].join("\n"),
+          )
+        }
+        if (basis === "public_transit_time") {
+          const plan = await planTransitMidpoint({
+            origins: parsedOrigins,
+            env: input.moimEnv,
+            odsayOptions: input.odsayOptions,
+          })
+          if (plan === undefined) {
+            return errorTextResult(formatMidpointError("대중교통 경로를 찾을 수 없습니다."))
+          }
+          return textResult(formatTransitPlan(plan))
+        }
         const sources = await loadMoimSources({
           origins: parsedOrigins,
           midpoint: { x: 126.98, y: 37.54 },
         })
-        const result = findMidpoint({ origins: sources.resolvedOrigins })
+        const result = findMidpoint({ origins: sources.resolvedOrigins, basis })
         if (!result.ok) {
           return errorTextResult(formatMidpointError("출발지를 2곳 이상 알려주세요."))
         }
@@ -324,6 +353,28 @@ function boardUrl(publicBaseUrl: string, id: string): string {
 
 function meetUrl(publicBaseUrl: string, id: string): string {
   return `${publicBaseUrl.replace(/\/+$/, "")}/meet/${encodeURIComponent(id)}`
+}
+
+function formatTransitPlan(plan: TransitMidpointPlan): string {
+  return [
+    "## 모임좌표 대중교통 중간지점",
+    "",
+    `- 추천 장소: ${plan.placeName}`,
+    ...(plan.address === undefined ? [] : [`- 주소: ${plan.address}`]),
+    `- 평균 이동시간: 약 ${plan.averageMinutes}분`,
+    `- 가장 오래 걸리는 사람: 약 ${plan.maxMinutes}분`,
+    `- 계산 방식: ${plan.provider === "odsay" ? "ODsay 실제 대중교통 경로" : "직선거리 기반 근사"}`,
+    "",
+    ...plan.routes.flatMap((route) => [
+      `- ${route.originLabel}: 약 ${route.totalMinutes}분 · 도보 ${route.totalWalkMeters.toLocaleString("ko-KR")}m · 환승 ${route.transferCount}회${route.paymentWon > 0 ? ` · ${route.paymentWon.toLocaleString("ko-KR")}원` : ""}`,
+      `  - 카카오맵: ${route.kakaoMapUrl}`,
+    ]),
+    "",
+    `> ${plan.note}`,
+    "",
+    "### 소스 상태",
+    formatSourceStatuses(plan.sources),
+  ].join("\n")
 }
 
 function toMeetOrigin(origin: ResolvedOrigin): MeetPlanOrigin {

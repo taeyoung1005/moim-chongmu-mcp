@@ -1,5 +1,7 @@
 import { createServiceApp, type ServiceApp } from "@playmcp/mcp-common"
 
+import type { MoimEnv } from "./adapters/moim-sources.js"
+import type { OdsayOptions } from "./adapters/odsay-transit.js"
 import {
   type AvailabilityBoardStore,
   createAvailabilityBoardStore,
@@ -15,6 +17,8 @@ export type MoimChongmuServiceOptions = {
   readonly publicBaseUrl?: string | undefined
   readonly kakaoMapJsKey?: string | undefined
   readonly routeApiKey?: string | undefined
+  readonly moimEnv?: MoimEnv | undefined
+  readonly odsayOptions?: OdsayOptions | undefined
 }
 
 export function createMoimChongmuService(options: MoimChongmuServiceOptions = {}): ServiceApp {
@@ -28,7 +32,14 @@ export function createMoimChongmuService(options: MoimChongmuServiceOptions = {}
     name: "모임좌표",
     version: "0.1.0",
     description: "가능 시간, 중간지점, 채팅 공유문을 stateless로 정리하는 MCP",
-    tools: createMoimTools({ boardStore, meetStore, publicBaseUrl, routeApiKey }),
+    tools: createMoimTools({
+      boardStore,
+      meetStore,
+      publicBaseUrl,
+      routeApiKey,
+      moimEnv: options.moimEnv,
+      odsayOptions: options.odsayOptions,
+    }),
   })
   return {
     config: service.config,

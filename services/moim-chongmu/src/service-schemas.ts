@@ -43,6 +43,7 @@ export const clockSchema = z.string().refine(isClock, {
 
 export const mcpOriginSchema = z.object({
   label: z.string().trim().min(1).max(80).optional(),
+  name: z.string().trim().min(1).max(80).optional(),
   address: z.string().trim().min(1).max(160).optional(),
   coordinates: lenientCoordinatesSchema.optional(),
   // Flat coordinate aliases: LLMs often send {label, lat, lng} with no `coordinates` wrapper.
@@ -66,7 +67,7 @@ const objectOriginSchema = mcpOriginSchema.transform((origin, ctx) => {
     return z.NEVER
   }
   return {
-    label: origin.label ?? origin.address ?? "출발지",
+    label: origin.label ?? origin.name ?? origin.address ?? "출발지",
     ...(origin.address === undefined ? {} : { address: origin.address }),
     ...(coordinates === undefined ? {} : { coordinates }),
   }

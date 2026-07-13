@@ -18,9 +18,13 @@ export type ResolvedOrigin = {
 export type FairnessRow = {
   readonly originLabel: string
   readonly distanceMeters: number
+  readonly estimatedTransitMinutes?: number | undefined
 }
 
+export type MidpointBasis = "distance" | "public_transit_time"
+
 export type MidpointResult = {
+  readonly basis: MidpointBasis
   readonly midpoint: Coordinates
   readonly fairnessRows: readonly FairnessRow[]
 }
@@ -69,6 +73,7 @@ export type RecommendedPlace = {
 
 export function findMidpoint(input: {
   readonly origins: readonly MeetingOrigin[]
+  readonly basis?: MidpointBasis | undefined
 }): Result<MidpointResult, MidpointError> {
   const resolved = input.origins.flatMap((origin) => {
     if (origin.coordinates === undefined || !isCoordinate(origin.coordinates)) return []
@@ -92,20 +97,80 @@ export function findMidpoint(input: {
     }
   }
 
-  const midpoint = {
-    x: round4(resolved.reduce((sum, origin) => sum + origin.coordinates.x, 0) / resolved.length),
-    y: round4(resolved.reduce((sum, origin) => sum + origin.coordinates.y, 0) / resolved.length),
-  }
+  const basis = input.basis ?? "distance"
+  const midpoint =
+    basis === "public_transit_time"
+      ? transitTimeMidpoint(resolved.map((origin) => origin.coordinates))
+      : coordinateAverage(resolved.map((origin) => origin.coordinates))
   return {
     ok: true,
     value: {
+      basis,
       midpoint,
-      fairnessRows: resolved.map((origin) => ({
-        originLabel: origin.label,
-        distanceMeters: Math.round(distanceMeters(origin.coordinates, midpoint)),
-      })),
+      fairnessRows: resolved.map((origin) => {
+        const meters = Math.round(distanceMeters(origin.coordinates, midpoint))
+        return {
+          originLabel: origin.label,
+          distanceMeters: meters,
+          ...(basis === "public_transit_time"
+            ? { estimatedTransitMinutes: estimateTransitMinutes(meters) }
+            : {}),
+        }
+      }),
     },
   }
+}
+
+function coordinateAverage(coordinates: readonly Coordinates[]): Coordinates {
+  return {
+    x: round4(coordinates.reduce((sum, point) => sum + point.x, 0) / coordinates.length),
+    y: round4(coordinates.reduce((sum, point) => sum + point.y, 0) / coordinates.length),
+  }
+}
+
+function transitTimeMidpoint(coordinates: readonly Coordinates[]): Coordinates {
+  const average = coordinateAverage(coordinates)
+  const xs = coordinates.map((point) => point.x)
+  const ys = coordinates.map((point) => point.y)
+  const minX = Math.min(...xs)
+  const maxX = Math.max(...xs)
+  const minY = Math.min(...ys)
+  const maxY = Math.max(...ys)
+  const steps = 24
+  let best = average
+  let bestScore = transitScore(coordinates, average)
+  for (let xIndex = 0; xIndex <= steps; xIndex += 1) {
+    for (let yIndex = 0; yIndex <= steps; yIndex += 1) {
+      const candidate = {
+        x: minX + ((maxX - minX) * xIndex) / steps,
+        y: minY + ((maxY - minY) * yIndex) / steps,
+      }
+      const score = transitScore(coordinates, candidate)
+      if (
+        score.maxMinutes < bestScore.maxMinutes ||
+        (score.maxMinutes === bestScore.maxMinutes && score.totalMinutes < bestScore.totalMinutes)
+      ) {
+        best = candidate
+        bestScore = score
+      }
+    }
+  }
+  return { x: round4(best.x), y: round4(best.y) }
+}
+
+function transitScore(
+  origins: readonly Coordinates[],
+  candidate: Coordinates,
+): { readonly maxMinutes: number; readonly totalMinutes: number } {
+  const minutes = origins.map((origin) => estimateTransitMinutes(distanceMeters(origin, candidate)))
+  return {
+    maxMinutes: Math.max(...minutes),
+    totalMinutes: minutes.reduce((sum, value) => sum + value, 0),
+  }
+}
+
+function estimateTransitMinutes(distance: number): number {
+  return Math.max(1, Math.round(8 + distance / 350))
 }
 
 export function recommendMidpointPlaces(input: {
